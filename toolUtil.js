@@ -216,7 +216,6 @@ function fixed(val) {
   return num.toString();
 }
 
-
 /**
  * 判断数组中有多少数值
  */
@@ -236,7 +235,7 @@ function unique(arr) {
  * 数字转换大写文字
  */
 function numUpper(num) {
-  var num = parseInt(num);
+  num = parseInt(num);
   var changeNum = ['零', '一', '二', '三', '四', '五', '六', '七', '八', '九'];
   var unit = ["", "十", "百", "千", "万"];
   var strArr = num.toString().split("").reverse();
