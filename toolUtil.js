@@ -85,6 +85,17 @@ function numUpper(num) {
   return newNum;
 }
 
+
+/**
+ * 复制对象/数组
+ * @param val
+ * @param type 0:对象 1： 数组
+ */
+copyObj(type, val) {
+  var obj = type ? [...val] : JSON.parse(JSON.stringify(val))
+  return obj
+},
+
 exports default = {
-  compare, minSort, sum, mod, fixed, unique, numUpper
+  compare, minSort, sum, mod, fixed, unique, numUpper, copyObj
 }
