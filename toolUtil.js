@@ -1,5 +1,6 @@
-
-// 格式化数据(合并同一天)
+/**
+ * 格式化数据(合并同一天)
+ */
 function formatDataDay(arr) {
   arr.forEach(e => {
     if (!isNaN(e.time)) {
@@ -41,7 +42,9 @@ function formatDataDay(arr) {
   return newArr
 }
 
-// 格式化数据(合并同一月，同一天)
+/**
+ * 格式化数据(合并同一月，同一天)
+ */
 function formatData(arr) {
   let newArr = [];
   arr.forEach((a, i) => {
@@ -95,8 +98,9 @@ function formatData(arr) {
             });
           }
         }
+        var param = {}
         if (!exsistsDate) {
-          var param = {
+          param = {
             date: a.time.slice(0,8),
             income: a.type ? parseFloat(a.money) : 0,
             outcome: a.type ? 0 : parseFloat(a.money),
@@ -112,7 +116,7 @@ function formatData(arr) {
           newArr.push(param);
         }
       } else {
-        var param = {
+        param = {
           date: a.time.slice(0, 8),
           income: a.type ? parseFloat(a.money) : 0,
           outcome: a.type ? 0 : parseFloat(a.money),
@@ -132,7 +136,9 @@ function formatData(arr) {
   return newArr
 }
 
-// 格式化数据（合并同一类）
+/**
+ * 格式化数据（合并同一类）
+ */
 function mergeCate(arr, callback) {
   var countArr = [[], []];
   arr.forEach(item => {
@@ -156,8 +162,9 @@ function mergeCate(arr, callback) {
   callback(countArr)
 }
 
-
-// 按照某字段排序(从小到大))
+/**
+ * 按照某字段排序(从小到大))
+ */
 function compare(property) {
   return function (a, b) {
     var value1 = a[property];
@@ -165,8 +172,26 @@ function compare(property) {
     return value2 - value1;
   }
 }
+/**
+ * 数组排序(从小到大))
+ */
+function minSort(arr) {
+  var min;
+  for (var i = 0; i < arr.length; i++) {
+    for (var j = i; j < arr.length; j++) {
+      if (parseInt(arr[i]) > parseInt(arr[j])) {
+        min = arr[j]
+        arr[j] = arr[i]
+        arr[i] = min
+      }
+    }
+  }
+  return arr
+}
 
-// 累加数组元素
+/**
+ * 累加数组元素
+ */
 function sum(arr) {
   var a = 0;
   for (var i = 0; i < arr.length; i++) {
@@ -175,18 +200,55 @@ function sum(arr) {
   return a;
 }
 
-// 百分比
+/**
+ * 百分比
+ */
 function mod(val, all) {
   var num = Math.ceil(val / all * 100) + "%";
   return num.toString();
 }
 
-// 保留两位小数
+/**
+ * 保留两位小数
+ */
 function fixed(val) {
   var num = Math.round(val * 100) / 100;
   return num.toString();
 }
 
-module.exports = {
-  formatData, mergeCate, compare, sum, mod, fixed, formatDataDay
+
+/**
+ * 判断数组中有多少数值
+ */
+function unique(arr) {
+  var result = [],
+    hash = {};
+  for (var i = 0, elem;(elem = arr[i]) != null; i++) {
+    if (!hash[elem]) {
+      result.push(elem);
+      hash[elem] = true;
+    }
+  }
+  return result;
+}
+
+/**
+ * 数字转换大写文字
+ */
+function numUpper(num) {
+  var num = parseInt(num);
+  var changeNum = ['零', '一', '二', '三', '四', '五', '六', '七', '八', '九'];
+  var unit = ["", "十", "百", "千", "万"];
+  var strArr = num.toString().split("").reverse();
+  var newNum = "";
+  for (var i = 0; i < strArr.length; i++) {
+    newNum = (i == 0 && strArr[i] == 0 ? "" : (i > 0 && strArr[i] == 0 && strArr[i - 1] == 0 ? "" : changeNum[parseInt(strArr[i])] + (strArr[i] == 0 ? unit[0] : unit[i]))) + newNum;
+  }
+  if (strArr.length == 2 && strArr[1] == 1) {
+    newNum = newNum.substring(1, newNum.length);
+  }
+  return newNum;
+
+exports default = {
+  formatData, mergeCate, compare, minSort, sum, mod, fixed, formatDataDay, unique, numUpper
 }
