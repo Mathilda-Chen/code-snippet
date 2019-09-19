@@ -1,6 +1,11 @@
 /**
  * 微信支付
  * 方法封装
+ * @param _openid: 用户openid
+ * @param appid: 小程序appid
+ * @param mch_id: 商务号id
+ * @param body: 支付提示文字信息（ex:'某某小程序VIP内购增值服务'）
+ * @param timeStamp: 时间戳（Date.parse(new Date()) / 1000）
  */
   const PayUtil = require("./utils/pay/payUtil.js");
   pay(_openid, appid, mch_id, body, timeStamp, callback) {
@@ -93,12 +98,6 @@ function singOrder(appid, body, mch_id, noteStr, notify_url, openid, time, spbil
   return stringSignTemp
 }
 
-function signDdk(stringA) {
-  var stringSignTemp = md5(stringA).toUpperCase();
-  // console.log('sign签名', stringA, stringSignTemp);
-  return stringSignTemp
-}
-
 /**
  * 调用支付时sign签名
  */
@@ -157,12 +156,13 @@ function formatNumber(n) {
 }
 
 exports default= {
-  formatTime, getnotsrc, singOrder, singPay, formatTimeDate, num_data, formatTimeMinenu, signDdk
+  formatTime, getnotsrc, singOrder, singPay, formatTimeDate, num_data, formatTimeMinenu
 }
 
 /**
  * md5.js
  */  
+
  /*  
  * 小程序MD5加密算法封装
  * +-----------------------------------------------------
