@@ -11,13 +11,13 @@
 ---
 > 微信小程序方法：<br>
 - wxApp.js封装方法：<br>
-[app.js](https://github.com/Mathilda-Chen/code-snippet/blob/master/wxApp.js)
+[wxApp.js](https://github.com/Mathilda-Chen/code-snippet/blob/master/wxApp.js)
 - 微信小程序支付相关方法：<br>
 [wxPay.js](https://github.com/Mathilda-Chen/code-snippet/blob/master/wxPay.js)
 ---
 > 快应用方法：<br>
 - quickApp.js封装方法：<br>
-[app.js](https://github.com/Mathilda-Chen/code-snippet/blob/master/quickApp.js)
+[quickApp.js](https://github.com/Mathilda-Chen/code-snippet/blob/master/quickApp.js)
 ---
 > 其他方法：<br>
 - 账单数据处理相关方法：<br>
