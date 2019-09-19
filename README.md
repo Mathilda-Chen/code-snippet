@@ -8,6 +8,6 @@
 - 图片相关方法：<br>
 [imageUtil.js](https://github.com/Mathilda-Chen/code-snippet/blob/master/imageUtil.js)
 ---
-- 其他方法：<br>
-    - hhhh<br>
+> 其他方法：<br>
+- 账单数据处理相关方法：<br>
 [bill_dataArrange.js](https://github.com/Mathilda-Chen/code-snippet/blob/master/bill_dataArrange.js)
