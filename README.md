@@ -1,5 +1,5 @@
-# code-snippet
-2019.09.09
+# codeSnippet
+2019.09
 ---
 > 常用方法：<br>
 - 工具相关方法：<br>
