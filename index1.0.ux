@@ -1,0 +1,253 @@
+<template>
+  <div class="calendar">
+    <!-- 头部年月日展示 -->
+    <div class="cal_header">
+      <text class="arrow" @click="changeMonth(-1)">《</text>
+      <text class="title">{{calYear}}年{{calMonth}}月</text>
+      <text class="arrow" @click="changeMonth(1)">》</text>
+    </div>
+    <!--展示星期头部 -->
+    <div class="cal_table">
+      <text class="header_th" for='{{weekArr}}'>{{$item}}</text>
+    </div>
+    <!-- 展示月的列表 -->
+    <div class="day_conter">
+      <stack class="header_th" for="{{monthArr}}" style="flex-direction: column;" @click="getDay($item)">
+        <text class="header_th" style="background-color: {{($idx>=curAunt[0]&&$idx<=curAunt[1])||($idx>=foreAunt[0]&&$idx<=foreAunt[1])||($idx>=nextAunt[0]&&$idx<=nextAunt[1])?'#ffb935':($idx>=curOvu[0]&&$idx<=curOvu[1])||($idx>=foreOvu[0]&&$idx<=foreOvu[1])||($idx>=nextOvu[0]&&$idx<=nextOvu[1])?'#ff7373':''}}">{{$item}}</text>
+        <div style="margin-top: 65px;margin-left:45px;width: 10px;height:10px;border-radius:10px;background-color: {{($idx>=curAunt[0]&&$idx<=curAunt[1])||($idx>=foreAunt[0]&&$idx<=foreAunt[1])||($idx>=nextAunt[0]&&$idx<=nextAunt[1])?'#ffb935':($idx>=curOvu[0]&&$idx<=curOvu[1])||($idx>=foreOvu[0]&&$idx<=foreOvu[1])||($idx>=nextOvu[0]&&$idx<=nextOvu[1])?'#ff7373':$item==''?'':'green'}}"></div>
+      </stack>
+    </div>
+  </div>
+</template>
+
+<script>
+export default {
+  data: {
+    weekArr: ['日', '一', '二', '三', '四', '五', '六',],
+    monthArr: [],
+    typeNum: 0, // 日历方向
+    calYear: 0,
+    calMonth: 0,
+    foreAunt: [],
+    foreOvu: [],
+    curAunt: [],
+    curOvu: [],
+    nextAunt: [],
+    nextOvu: [],
+    blankForeAunt: [], // 当月无月经，存储上个月的月经周期
+  },
+  getDay(e){
+    console.info(e)
+  },
+  onInit() {
+    this.backDay()
+  },
+  backDay() {
+    // 当前日期
+    var date = new Date()
+    this.calYear = date.getFullYear()
+    this.calMonth = date.getMonth() + 1
+    this.getMonthArr()
+  },
+  // 计算当前日历
+  getMonthArr() {
+    var year = this.calYear,
+      month = this.calMonth,
+      totalDay = this.getTotalDay(year, month)[0],
+      firstWeek = this.getTotalDay(year, month)[1]
+    var monthArr = []
+    for (var i = 1; i < totalDay + 1; i++) {
+      monthArr.push(i)
+    }
+    this.monthArr = [...new Array(firstWeek).fill(''), ...monthArr]
+    this.getFirDay(year, month)
+  },
+  // 计算当月日历月经第一天
+  getFirDay(calYear, calMonth) {
+    // 获取经期相关数据 从上一个页面获取
+    var auntDur = 8, // 月经持续时间
+      totalDur = 35, // 月经周期
+      auntFir = '2020-4-1' // 记录第一天 从上一个页面获取
+    var auntFirDay = Number(auntFir.split('-')[2]),
+      auntFirMonth = Number(auntFir.split('-')[1]),
+      auntFirYear = Number(auntFir.split('-')[0])
+    // 判断当前日历是否在输入值之前
+    if ((this.calYear == auntFirYear && this.calMonth < auntFirMonth) || this.calYear < auntFirYear) {
+      this.foreAunt = []
+      this.foreOvu = []
+      this.curAunt = []
+      this.curOvu = []
+      this.nextAunt = []
+      this.nextOvu = []
+      return
+    }
+    var diffMon = this.datemonth(auntFir, `${calYear}-${calMonth}`)
+    for (var i = 0; i < 10000; i++) {
+      var auntFirStamp = new Date(auntFir).getTime() + totalDur * 24 * 60 * 60 * 1000 * (diffMon + diffMon < 0 ? -i : i)
+      var date = new Date(auntFirStamp)
+      var year = date.getFullYear()
+      var month = date.getMonth() + 1
+      if (year == calYear && month == calMonth) {
+        auntFirDay = date.getDate()
+        break
+      } else if ((year == calYear && month > calMonth) || (year > calYear && month == calMonth)) {
+        auntFirDay = ''
+        break
+      }
+    }
+    console.info('日历当前时间', this.calYear, this.calMonth, '月经日期', year + '-' + month + '-' + auntFirDay)
+    this.drawCal(auntDur, totalDur, auntFirDay)
+  },
+  // 渲染日历
+  drawCal(auntDur, totalDur, auntFirDay) {
+    var safeDur = totalDur - 19 - auntDur, // 月经期与排卵期中间的安全期天数
+      monthArr = this.monthArr, // 当月日历参数
+      monthArrLen = this.monthArr.length
+    // 特殊情况：当月无月经，即上个月经期未全部显示，在本月继续渲染
+    if (auntFirDay == '') {
+      console.info('当月无月经')
+      if (this.typeNum == 1) {
+        // 存储上个月月经第一天
+        this.blankForeAunt = this.curAunt
+      }
+      var diffDay = auntDur - (this.blankForeAunt[1] - this.blankForeAunt[0] + 1)
+      var auntLS = monthArr.indexOf(1)
+      var auntLE = monthArr.indexOf(1) + diffDay - 1
+      this.foreAunt = [auntLS, auntLE]
+      var ovuS = auntLE + safeDur + 1
+      var ovuE = ovuS + 10 - 1
+      this.foreOvu = [ovuS, ovuE]
+      this.curAunt = []
+      this.curOvu = []
+      this.nextAunt = []
+      this.nextOvu = []
+      return
+    }
+    // 当前月经期
+    var curAuntS = monthArr.indexOf(auntFirDay)
+    var curAuntE = this.computeIdx(curAuntS + auntDur - 1, 'down')
+    this.curAunt = [curAuntS, curAuntE]
+    // 当前排卵期
+    var curOvuS = monthArr.indexOf(auntFirDay + auntDur + safeDur)
+    if (curOvuS != -1) {
+      var curOvuE = this.computeIdx(curOvuS + 10 - 1, 'down')
+      this.curOvu = [curOvuS, curOvuE]
+    } else {
+      this.curOvu = []
+    }
+    // console.info('当前月经期Idx', this.curAunt, '当前排卵期Idx', this.curOvu)
+    // 上一次排卵期
+    var foreOvuE = monthArr.indexOf(auntFirDay - 9 - 1)
+    if (foreOvuE != -1) {
+      var foreOvuS = this.computeIdx(foreOvuE - 10 + 1, 'up')
+      this.foreOvu = [foreOvuS, foreOvuE]
+      // 上一次月经期
+      if ((foreOvuE - foreOvuS + 1) == 10 && foreOvuS - monthArr.indexOf(1) > safeDur) {
+        var foreAuntE = foreOvuS - safeDur - 1
+        var foreAuntS = this.computeIdx(foreAuntE - auntDur + 1, 'up')
+        this.foreAunt = [foreAuntS, foreAuntE]
+      } else {
+        this.foreAunt = []
+      }
+    } else {
+      this.foreOvu = []
+      this.foreAunt = []
+    }
+    // console.info('上一次排卵期Idx', this.foreOvu, '上一次月经期Idx', this.foreAunt)
+    // 下一次月经期
+    var nextAuntS = monthArr.indexOf(auntFirDay + totalDur)
+    if (nextAuntS != -1) {
+      var nextAuntE = this.computeIdx(nextAuntS + auntDur - 1, 'down')
+      this.nextAunt = [nextAuntS, nextAuntE]
+      // 下一次排卵期
+      var nextOvuS = nextAuntE + safeDur + 1
+      if (nextOvuS <= monthArrLen) {
+        var nextOvuE = this.computeIdx(nextOvuS + 10 - 1, 'down')
+        this.nextOvu = [nextOvuS, nextOvuE]
+      } else {
+        this.nextOvu = []
+      }
+    } else {
+      this.nextAunt = []
+      this.nextOvu = []
+    }
+    // console.info('下一次月经期Idx', this.nextAunt, '下一次排卵期Idx', this.nextOvu)
+  },
+  // 切换月份
+  changeMonth(typeNum) {
+    var month = this.calMonth + typeNum
+    if (month == 13) {
+      this.calYear++
+      month = 1
+    } else if (month == 0) {
+      this.calYear--
+      month = 12
+    }
+    this.calMonth = month
+    this.typeNum = typeNum
+    this.getMonthArr()
+  },
+  // 获取当前月份天数及1号的星期
+  getTotalDay(year, month) {
+    var t = new Date(year, month, 0).getDate()
+    var d = new Date(year, month - 1, 1).getDay()
+    return [t, d]
+  },
+  // 计算index推算
+  computeIdx(a, type) {
+    var c = type == 'down' ? this.monthArr.length - 1 : this.monthArr.indexOf(1)
+    if (a >= c) {
+      return type == 'down' ? c : a
+    } else {
+      return type == 'down' ? a : c
+    }
+  },
+  //计算日期之间的月数
+  datemonth(date1, date2) {
+    date1 = date1.split('-') // 拆分年月日
+    date1 = parseInt(date1[0]) * 12 + parseInt(date1[1]) // 得到月数
+    date2 = date2.split('-') // 拆分年月日
+    date2 = parseInt(date2[0]) * 12 + parseInt(date2[1]) // 得到月数
+    var m = date2 - date1
+    return m
+  }
+}
+</script>
+
+<style lang="less">
+.calendar {
+  padding: 0 25px;
+  flex: 1;
+  flex-direction: column;
+  align-items: center;
+}
+.cal_header {
+  padding: 20px 0;
+}
+.arrow {
+  width: 50px;
+  height: 50px;
+  text-align: center;
+  background-color: rgb(218, 141, 141);
+}
+.title {
+  padding: 0 20px;
+  font-size: 30px;
+}
+/* 星期 */
+.cal_table {
+  width: 750px;
+  height: 80px;
+  align-items: center;
+}
+/* 展示月的列表 */
+.day_conter {
+  flex-wrap: wrap;
+}
+.header_th {
+  color: #8c8c8c;
+  width: 100px;
+  height: 80px;
+  text-align: center;
+}
+</style>
