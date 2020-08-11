@@ -1,0 +1,350 @@
+<import name="askbox" src="../Common/component/ask_box.ux"></import>
+<template>
+  <div>
+    <stack>
+      <image class="bg" src="../Common/image/bg/bg_{{item.topic}}.png" if="{{item.topic}}"></image>
+      <stack>
+        <!-- 圆形进度条 -->
+        <canvas class="progressbar" id="progressbar"></canvas>
+        <div class="progressbar justify">
+          <text>{{hour}}:{{minutes}}</text>
+          <text class="dot-opacity">:</text>
+          <text>{{seconds}}</text>
+        </div>
+      </stack>
+      <!-- 按钮 -->
+      <div class="btn justify" if="{{tipType<1}}">
+        <text @click="tapGiveBtn">放弃</text>
+      </div>
+    </stack>
+    <askbox tip-type="{{tipType}}" @tap-btn="tapBoxBtn"></askbox>
+  </div>
+</template>
+<script>
+import TIME from '../Common/js/dateUtil.js'
+import vibrator from '@system.vibrator'
+import prompt from '@system.prompt'
+const centerX = 250, //Canvas中心点x轴坐标
+  centerY = 250, //Canvas中心点y轴坐标
+  rad = Math.PI * 2 / 1000 //将360度分成1000份，那么每一份就是rad度
+export default ({
+  protected: {
+    info: ''
+  },
+  private: {
+    pageInfo: '',
+    BORDER: [],
+    item: {},
+    hour: '00',
+    minutes: '00',
+    seconds: '00',
+    tipType: 0,
+    timer: '', // 时间倒计时
+    interval: '', // 圆环倒计时
+    startTime: 0, // 开始的时间
+    isLast: false
+  },
+
+  onInit() {
+    this.BORDER = this.$app.$def.TOPIC.BORDER
+    this.pageInfo = this.info
+  },
+
+  onShow() {
+    this.$app.getStorage('keepScreenOn').then(res => {
+      if (res) {
+        const brightness = require('@system.brightness')
+        brightness.setKeepScreenOn({
+          keepScreenOn: true
+        })
+      }
+    })
+    this.$app.getStorage('temporary').then(e => { // 判断是否有临时番茄钟
+      if (!e || !e.startTime) { // 无记录
+        if (this.tipType == 0) {
+          this.startTomato()
+        }
+      } else {
+        this.item = e
+        var endTime = e.startTime + (e.time[0] * 60 + e.time[1]) * 60 * 1000 // 判断是否已经结束
+        if (endTime <= TIME.getTime()) { // 结束
+          if (this.pageInfo) { // 开启了新的番茄钟
+            this.saveTomato(endTime, true, 2)
+          } else {
+            this.formatTime(0)
+            this.drawCav(0, 0, 0)
+            this.tipType = 2
+            this.saveTomato(endTime, true, 0)
+          }
+        } else {
+          if (this.pageInfo) { // 开启了新的番茄钟
+            this.tipType = 3
+          } else {
+            this.computeSec()
+          }
+        }
+      }
+    })
+  },
+
+  onHide() {
+    this.isLast = false
+    this.pageInfo = ''
+    console.info('onHide',this.tipType)
+    if (this.tipType == 0) {
+      clearInterval(this.interval)
+      clearInterval(this.timer)
+      this.$app.setStorage('temporary', this.item) // 存储临时番茄钟
+    }
+  },
+
+  startTomato() {
+    if (!this.isLast) {
+      this.item = JSON.parse(this.info)
+    }
+    this.item.startTime = TIME.getTime()
+    // this.item = { id: 0, time: [0, 0.1], topic: 1, startTime: TIME.getTime() } // 测试
+    this.$app.getStorage('openClock').then(res => {
+      if (res) {
+        setTimeout(() => {
+          this.setAlarm()
+        }, 1000)
+      }
+    })
+    this.computeSec()
+  },
+
+  /**
+   * 时间计算
+   */
+  computeSec() {
+    console.info(this.item)
+    this.$app.setStorage('temporary', {})
+    var time = this.item.time
+    var totalSec = (time[0] * 60 + time[1]) * 60 // 总秒数
+    var restSec = totalSec - (TIME.getTime() - this.item.startTime) / 1000 // 剩余秒数
+    restSec < 0 && (restSec = 0)
+    this.formatTime(restSec)
+    if (restSec <= 0) {
+      this.tipType = 2
+      return
+    }
+    this.countDown(totalSec, restSec)
+  },
+
+  countDown(totalSec, restSec) {
+    // 时间倒计时
+    this.timer = setInterval(() => {
+      if (restSec > 0) {
+        restSec--
+        this.formatTime(restSec)
+      }
+      // 倒计时完成
+      // if (!restSec) {}
+    }, 1000)
+    // 圆环倒计时
+    setTimeout(() => {
+      // var outTime = totalSec >= 300 ? 1000 : 10
+      var outTime = 100
+      var speed = outTime / totalSec, // 每outTimems走的长度
+        n = 0, // 绘制圆环速度
+        m = speed * (totalSec - restSec) * (1000 / outTime)
+      this.interval = setInterval(() => {
+        n += speed
+        this.drawCav(n, m, speed)
+        if (n + m > 1000) {
+          this.tipType = 2
+          this.saveTomato(0, true, 0)
+          clearInterval(this.interval)
+        }
+      }, outTime)
+    }, 200)
+  },
+
+  formatTime(restSec) {
+    var hour = Math.floor(restSec / 60 / 60 % 24)
+    var minutes = Math.floor(restSec / 60 % 60)
+    var seconds = Math.floor(restSec % 60)
+    this.hour = `0${hour}`
+    this.minutes = minutes < 10 ? `0${minutes}` : minutes
+    this.seconds = seconds < 10 ? `0${seconds}` : seconds
+  },
+
+  drawCav(n, m) {
+    // 绘制圆环
+    const canvas = this.$element('progressbar')
+    const ctx = canvas.getContext('2d')
+    // 清除画布
+    ctx.clearRect(0, 0, 500, 500)
+    //绘制白色外圈
+    ctx.save()
+    ctx.beginPath()
+    ctx.lineWidth = 8 //设置线宽
+    ctx.strokeStyle = '#ffffff'
+    ctx.arc(centerX, centerY, 242, -Math.PI / 2 + (n + m) * rad, -Math.PI / 2, false)
+    ctx.stroke()
+    ctx.closePath()
+    ctx.restore()
+  },
+
+  /**
+   * 点击放弃按钮
+   */
+  tapGiveBtn() {
+    this.tipType = 1
+  },
+
+  /**
+   * 点击弹框按钮
+   */
+  tapBoxBtn(e) {
+    if (this.tipType == 1) {
+      if (e.detail) { // 继续坚持
+        this.tipType = 0
+      } else { // 放弃
+          console.info('tapBoxBtn',this.tipType)
+        this.saveTomato(0, false, 1)
+      }
+    }
+    if (this.tipType == 2) {
+      if (e.detail == 1) { // 回到首页
+        this.$app.$def.router.back()
+      } else { // 再来一轮
+        this.tipType = 0
+        this.startTomato()
+      }
+    }
+    if (this.tipType == 3) {
+      this.tipType = 0
+      if (e.detail) { // 是(继续完成上一个任务)
+        this.isLast = true // 结束时开启新的一轮需要用上一次番茄钟的参数
+        this.computeSec()
+      } else { // 否(重新开始)
+        this.saveTomato(0, false, 2)
+      }
+    }
+  },
+
+  /**
+   * 保存番茄
+   * @type 0: 成功 1:有急事 2:开始新的
+   */
+  saveTomato(endTime, state, type) {
+    clearInterval(this.interval)
+    clearInterval(this.timer)
+    this.$app.getStorage('history').then(res => {
+      var arr = res || []
+      this.item.hid = (res && res.length) || 0
+      this.item.endTime = endTime ? endTime : TIME.getTime()
+      this.item.state = state
+      arr.push(this.item)
+      this.$app.setStorage('history', arr).then(() => {
+        switch (type) {
+          case 0:
+            vibrator.vibrate({
+              mode: 'long'
+            })
+            break
+          case 1:
+            console.info('tapBoxBtn',this.tipType)
+            this.$app.$def.router.back()
+            break
+          case 2:
+            this.startTomato()
+            break
+        }
+      })
+      console.info('history', arr)
+    })
+  },
+
+  /**
+   * 开启闹钟
+   */
+  setAlarm() {
+    TIME.setAlarm(this.item.startTime, this.item.time, this.item.title).then(() => {
+      this.$app.showMsg(0, '开启成功')
+    })
+  },
+
+  /**
+   * 点击手机返回键
+   */
+  onBackPress() {
+    if (this.tipType != 2) {
+      this.tipType = 1
+      return true
+    }
+  },
+
+  none() { },
+})
+</script>
+<style lang="less">
+/* 常用样式 */
+.column {
+  flex-direction: column;
+}
+
+.center {
+  align-items: center;
+}
+
+.between {
+  justify-content: space-between;
+  align-items: center;
+}
+
+.justify {
+  justify-content: center;
+  align-items: center;
+}
+
+.bg {
+  width: 100%;
+  height: 100%;
+}
+
+/* 圆形进度条 */
+.progressbar {
+  width: 500px;
+  height: 500px;
+  margin: 260px 110px;
+  text {
+    color: #ffffff;
+    font-size: 100px;
+  }
+  /* 冒号每秒闪动动画 */
+  .dot-opacity {
+    animation-name: dotOpa;
+    animation-duration: 1000ms;
+    animation-fill-mode: forwards;
+    animation-iteration-count: infinite;
+  }
+  @keyframes dotOpa {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+}
+
+/* 按钮 */
+.btn {
+  width: 720px;
+  height: 80px;
+  margin-top: 1050px;
+  text {
+    width: 180px;
+    height: 70px;
+    border: 2px solid #ffffff;
+    border-radius: 35px;
+    background-color: rgba(255, 255, 255, 0.5);
+    font-size: 36px;
+    text-align: center;
+    color: #ffffff;
+  }
+}
+</style>
