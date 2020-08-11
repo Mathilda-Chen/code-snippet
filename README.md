@@ -24,3 +24,5 @@
 [bill_dataArrange.js](https://github.com/Mathilda-Chen/code-snippet/blob/master/bill_dataArrange.js)
 - 拼多多对接相关方法：<br>
 [pddBuy.js](https://github.com/Mathilda-Chen/code-snippet/blob/master/pddBuy.js)
+- 时钟倒计时：<br>
+[tomato.ux](https://github.com/Mathilda-Chen/code-snippet/blob/master/tomato.ux)
