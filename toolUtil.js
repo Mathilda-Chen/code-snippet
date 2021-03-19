@@ -1,4 +1,46 @@
 /**
+ * 计算剪裁图片比例
+ */
+async function computeImg(src, maxWidth, maxHeight, spe) {
+	var { width, height } = spe || await API.getImgInfo(src)
+	var endWidth = width
+	var endHeight = height
+	if (width > maxWidth && height <= maxHeight) {
+		endHeight = maxWidth * height / width
+		endWidth = maxWidth
+	}
+	if (width <= maxWidth && height > maxHeight) {
+		endWidth = maxHeight * width / height
+		endHeight = maxHeight
+	}
+	if (width >= maxWidth && height >= maxHeight) {
+		if (width / height > maxWidth / maxHeight) {
+			endHeight = maxWidth * height / width
+			endWidth = maxWidth
+		} else {
+			endWidth = maxHeight * width / height
+			endHeight = maxHeight
+		}
+	}
+	return {
+		width: parseInt(endWidth),
+		height: parseInt(endHeight),
+		export_scale: width / parseInt(endWidth)
+	}
+}
+/**
+ * 获取指定位数的随机字符串
+ */
+function getnotsrc(length) {
+	var chars = "ABCDEFGHJKMNPQRSTWXYZabcdefhijkmnprstwxyz2345678"; /****默认去掉了容易混淆的字符oOLl,9gq,Vv,Uu,I1****/
+	var maxPos = chars.length;
+	var pwd = "";
+	for (var i = 0; i < length; i++) {
+		pwd += chars.charAt(Math.floor(Math.random() * maxPos));
+	}
+	return pwd;
+}
+/**
  * 按照某字段排序(从小到大))
  */
 function compare(property) {
